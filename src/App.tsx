@@ -40,7 +40,7 @@ function App() {
       pointStyle: {color: 'white', size: 0}
     };
     map.current.addLayer(layer2);
-    //map.current.addLayer(layer);
+    map.current.addLayer(layer);
   }, []);
 
   const sensors = useSensors(
