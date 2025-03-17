@@ -9,8 +9,20 @@ export class Polygon implements MapObject {
   public holes?: Coordinate[][];
   layer?: Layer;
   style?: PolygonStyle;
+  private isSelected: boolean = false;
 
+  public setSelected(selected: boolean): void {
+    this.isSelected = selected;
+  }
   public getEffectiveStyle(): Style {
+    if (this.isSelected) {
+      return new PolygonStyle({
+        fillColor: '#ffc300',
+        strokeColor:
+          this.style?.strokeColor || this.layer?.style?.polygonStyle?.strokeColor || '#000000',
+        strokeWidth: 8,
+      });
+    }
     return (this.style || this.layer?.style?.polygonStyle)!;
   }
   constructor(exterior: Coordinate[], style?: PolygonStyle) {
@@ -128,5 +140,19 @@ export class Polygon implements MapObject {
       holes: this.holes ? this.holes.map((hole) => hole.map((coord) => coord.toJSON())) : null,
       layer: this.layer ? this.layer.name : null,
     };
+  }
+  public containsPoint(point: Coordinate): boolean {
+    let inside = false;
+    for (let i = 0, j = this.exterior.length - 1; i < this.exterior.length; j = i++) {
+      const xi = this.exterior[i].x,
+        yi = this.exterior[i].y;
+      const xj = this.exterior[j].x,
+        yj = this.exterior[j].y;
+
+      const intersect =
+        yi > point.y !== yj > point.y && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 }

@@ -1,127 +1,142 @@
-import { Coordinate } from "@/miniGIS/lib/models";
+import {  Layer } from "@/miniGIS/lib/models";
 import "./App.css";
-import { Map } from "@/miniGIS/lib/models/map";
-import { useRef, useEffect, useState, useMemo } from "react";
-import TestJSON from '@/miniGIS/test/world.json';
+import {  useEffect} from "react";
+import TestJSON from '@/miniGIS/test/tomsk.json';
+import Test2JSON from '@/miniGIS/test/world.json';
 import { parseGeoJSON } from "@/miniGIS/lib/parser";
+import { useDrawMap } from "@/miniGIS/events/drawMap";
+import { useMapInteractions } from "@/miniGIS/events/mapInteractions";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import Icon from "@mdi/react";
+import { mdiDelete, mdiEye, mdiEyeOff } from "@mdi/js";
 
 function App() {
-  const [canvasWidth, canvasHeight] = [800, 600];
-  const [map] = useState(new Map(new Coordinate(0, 0), canvasWidth, canvasHeight));
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastMousePosition, setLastMousePosition] = useState<Coordinate | null>(null);
-  const [currentMousePosition, setCurrentMousePosition] = useState<Coordinate>(new Coordinate(map.center.x, map.center.y));
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const lastMouseWorld = useMemo(() => {
-    return currentMousePosition ? map.screenToWorld(currentMousePosition) : new Coordinate(0, 0);
-  }, [currentMousePosition, map]);
-
-  const infoScreenString = useMemo(() => {
-    return `X: ${lastMouseWorld.x.toFixed(4)}\t\t Y: ${lastMouseWorld.y.toFixed(4)}\t\t Scale: ${map.scale.toFixed(4)}`;
-  }, [lastMouseWorld, map.scale]);
-
-  const drawCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    map.getLayers().forEach(layer => {
-      if (layer.isVisible) {
-        layer.geometries.forEach(geometry => {
-          ctx.strokeStyle = 'white';
-          ctx.save();
-          geometry.draw(ctx, map, canvas.width, canvas.height);
-          ctx.restore();
-        });
-      }
-    });
-  };
+  const { canvasRef, canvasHeight,canvasWidth, map, drawCanvas } = useDrawMap();
 
   useEffect(() => {
-    drawCanvas();
-  }, [map]);
-
-  useEffect(() => {
-    const layer = parseGeoJSON(TestJSON, map, "name 1");
+    const layer = parseGeoJSON(TestJSON, "tomsk");
     layer.style = {
-      ...layer.style,
-      lineStyle: {
-        color: 'lightgreen',
-        type: 'solid',
-        width: 1
-      },
-      polygonStyle: {
-        fillColor: 'blue',
-        strokeColor: "black",
-        strokeWidth: 2
-      }
-
-    }
-    map.addLayer(layer);
+      lineStyle: { color: '#023047', type: 'solid', width: 2 },
+      polygonStyle: { fillColor: '#2a9d8f', strokeColor: '#000', strokeWidth: 1 },
+    };
+    const layer2 = parseGeoJSON(Test2JSON, "world");
+    layer2.style = {
+      lineStyle: { color: 'black', type: 'solid', width: 8 },
+      polygonStyle: { fillColor: '#3D62C1', strokeColor: '#000', strokeWidth: 2 },
+      pointStyle: {color: 'white', size: 0}
+    };
+    map.current.addLayer(layer2);
+    //map.current.addLayer(layer);
   }, []);
 
-  // Mouse interaction handlers
-  const handleMouseDown = (event: React.MouseEvent) => {
-    setIsDragging(true);
-    setLastMousePosition(new Coordinate(event.clientX, event.clientY));
-  };
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {delay: 100, tolerance: 100}
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  const debouncedHandleMouseMove = (event: React.MouseEvent) => {
-    if (isDragging && lastMousePosition) {
-      const deltaX = (event.clientX - lastMousePosition.x) / map.scale;
-      const deltaY = (lastMousePosition.y - event.clientY) / map.scale;
+  
 
-      const limitedDeltaX = Math.max(-10, Math.min(10, deltaX));
-      const limitedDeltaY = Math.max(-10, Math.min(10, deltaY));
-
-      map.move(-limitedDeltaX, -limitedDeltaY);
-      setLastMousePosition(new Coordinate(event.clientX, event.clientY));
-      drawCanvas();
-    }
-
-    setCurrentMousePosition(new Coordinate(event.clientX, event.clientY));
-  }
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    debouncedHandleMouseMove(event);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setLastMousePosition(null);
-  };
-
-  const handleWheel = (event: React.WheelEvent) => {
-    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
-    map.zoom(zoomFactor);
-    drawCanvas();
-  };
+  const { infoScreenString, selectedFeatures, handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleDragEnd, clearSelected } =
+    useMapInteractions(map.current, drawCanvas, canvasRef);
 
   return (
-    <div className="relative overflow-hidden" style={{ width: canvasWidth, height: canvasHeight }}>
-      <canvas
-        ref={canvasRef}
-        width={canvasWidth}
-        height={canvasHeight}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onWheel={handleWheel}
-        style={{
-          backgroundColor: 'lightgray'
-        }}
-      />
-      <div className="absolute bottom-0 left-0 w-full h-[25px] text-center bg-white pointer-events-none">
-        {infoScreenString}
+    <div className="flex flex-row rounded-2xl">
+      <div className="relative">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={map.current.getLayers().map((layer) => layer.id)}
+            strategy={verticalListSortingStrategy}
+            >
+            <div className="w-[200px] h-screen bg-white flex flex-col gap-8 p-4">
+              {map.current.getLayers().map((layer) => (
+                <SortableLayer key={layer.id} layer={layer} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+        { selectedFeatures.length > 0 && 
+          <button onClick={clearSelected} className="absolute bottom-10 cursor-pointer left-1/2 -translate-x-1/2 rounded-3xl text-white h-[50px] bg-black/70 w-full">Удалить выделенное</button>
+        }
+      </div>
+      <div className="relative overflow-hidden" style={{ width: canvasWidth, height: canvasHeight }}>
+        <canvas
+          ref={canvasRef}
+          width={canvasWidth}
+          height={canvasHeight}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onWheel={handleWheel}
+          style={{ backgroundColor: '#F5D1D8', borderRadius: '8px' }}
+        />
+        <div className="absolute bottom-0 rounded-t left-0 w-full h-[25px] text-center bg-white pointer-events-none">
+          {infoScreenString}
+        </div>
       </div>
     </div>
   );
 }
+
+const SortableLayer = ({ layer }: {layer: Layer}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: layer.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex flex-row items-center justify-between border border-[#e0e0e0] bg-[#b5e48c] p-1 rounded"
+      {...attributes}
+      {...listeners}
+    >
+      <div className="w-full cursor-grab">{layer.name}</div>
+      <section className="inline-flex gap-1" >
+        <button type='button' className="z-10 cursor-pointer"  onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          layer.changeVisibility()
+        } }>
+          <Icon path={layer.isVisible ? mdiEye : mdiEyeOff} size={1}/>
+        </button>
+        <button type='button' className="z-10 cursor-pointer" 
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault()
+            layer.map?.removeLayer(layer)
+          }}>
+          <Icon path={mdiDelete} size={1} color='#f08080'/>
+        </button>
+      </section>
+    </div>
+  );
+};
 
 export default App;

@@ -4,6 +4,7 @@ import { MapObject } from '@/miniGIS/lib/models/map_object';
 import { LayerStyle } from '@/miniGIS/lib/models/style/layer';
 
 export class Layer {
+  public id: string;
   public name: string;
   public readonly geometries: MapObject[];
   public isVisible: boolean;
@@ -15,13 +16,14 @@ export class Layer {
     this.geometries = [];
     this.isVisible = true;
     this.style = style ?? new LayerStyle();
+    this.id = crypto.randomUUID();
   }
 
   public addGeometry<T extends MapObject>(geometry: T): void {
     geometry.setLayer(this);
     this.geometries.push(geometry);
   }
-
+  public getIsVisivble = () => this.isVisible;
   public removeGeometry(index: number): MapObject | undefined {
     if (index < this.geometries.length) {
       return this.geometries.splice(index, 1)[0];
@@ -88,6 +90,7 @@ export class Layer {
 
   public changeVisibility(): void {
     this.isVisible = !this.isVisible;
+    if (this.map) this.map.changeVisibilityNotify();
   }
 
   public toString(): string {

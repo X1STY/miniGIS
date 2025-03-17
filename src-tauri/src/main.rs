@@ -34,7 +34,5 @@ fn main() {
     polygon.add_point(Coordinate::new(1.0, 1.0));
     layer.add_geometry(polygon);
 
-    print!("{:#?}", layer.get_geometry(0));
-
     minigis_lib::run()
 }

@@ -1,7 +1,7 @@
 import { Coordinate, Layer, Line, Point, Polygon } from '@/miniGIS/lib/models';
 import { Map } from '@/miniGIS/lib/models/map';
 
-export const parseGeoJSON = (geoJSON, map, layerName) => {
+export const parseGeoJSON = (geoJSON, layerName) => {
   const layer = new Layer(layerName);
 
   geoJSON.features.forEach((feature) => {

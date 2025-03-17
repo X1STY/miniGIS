@@ -1,6 +1,8 @@
 import { Coordinate } from '@/miniGIS/lib/models/coordinate';
 import { Layer } from '@/miniGIS/lib/models/layer';
 
+export type IEventType = 'scale' | 'changeLayers';
+
 export class Map {
   private layers: Layer[];
   public center: Coordinate;
@@ -15,15 +17,28 @@ export class Map {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
   }
+  private observers: Array<(event: { type: IEventType; data: any }) => void> = [];
 
+  addObserver(observer: (event: { type: IEventType; data: any }) => void) {
+    this.observers.push(observer);
+  }
+
+  removeObserver(observer: (event: { type: IEventType; data: any }) => void) {
+    this.observers = this.observers.filter((obs) => obs !== observer);
+  }
+
+  private notifyObservers(event: { type: IEventType; data: any }) {
+    this.observers.forEach((observer) => observer(event));
+  }
   public addLayer(layer: Layer): void {
     layer.setMap(this);
-    this.layers.push(layer);
+    this.layers.unshift(layer);
     const layerCenter = layer.getCenter();
     if (layerCenter) {
       this.center = layerCenter;
       this.scale = layer.getScaleToFit(this.canvasWidth, this.canvasHeight);
     }
+    this.notifyObservers({ type: 'changeLayers', data: this.layers });
   }
 
   public getLayer(index: number): Layer | undefined {
@@ -34,6 +49,16 @@ export class Map {
     return this.layers;
   }
 
+  public changeVisibilityNotify() {
+    this.notifyObservers({ type: 'changeLayers', data: this.layers });
+  }
+
+  public removeLayer(layer: Layer) {
+    const index = this.layers.findIndex((val) => val.id === layer.id);
+    this.layers.splice(index, 1);
+    this.notifyObservers({ type: 'changeLayers', data: this.layers });
+  }
+
   public move(deltaX: number, deltaY: number): void {
     this.center.x += deltaX;
     this.center.y += deltaY;
@@ -41,6 +66,7 @@ export class Map {
 
   public zoom(factor: number): void {
     this.scale *= factor;
+    this.notifyObservers({ type: 'scale', data: this.scale * factor });
   }
 
   public moveLayer(currentIndex: number, newIndex: number): void {
@@ -55,6 +81,7 @@ export class Map {
 
     const [layer] = this.layers.splice(currentIndex, 1);
     this.layers.splice(newIndex, 0, layer);
+    this.notifyObservers({ type: 'changeLayers', data: this.layers });
   }
 
   public worldToScreen(coordinate: Coordinate): Coordinate {
