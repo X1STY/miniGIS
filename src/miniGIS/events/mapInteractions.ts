@@ -40,13 +40,17 @@ export const useMapInteractions = (
     const layers = map.getLayers();
     let foundObj: Polygon | null = null;
 
-    for (let i = layers.length - 1; i >= 0; i--) {
+    for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
       if (!layer.isVisible) continue;
 
-      foundObj = layer.geometries.find(
-        (obj) => obj instanceof Polygon && obj.containsPoint(worldPoint)
-      ) as Polygon | null;
+      for (let j = layer.geometries.length - 1; j >= 0; j--) {
+        const obj = layer.geometries[j];
+        if (obj instanceof Polygon && obj.containsPoint(worldPoint)) {
+          foundObj = obj;
+          break;
+        }
+      }
       if (foundObj) break;
     }
 

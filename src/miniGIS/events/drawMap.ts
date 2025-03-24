@@ -1,11 +1,12 @@
 import { Coordinate, Point } from '@/miniGIS/lib';
 import { Map } from '@/miniGIS/lib/models/map';
+import { mdiContentSaveSettings } from '@mdi/js';
 import _ from 'lodash';
 import { useEffect, useRef, useState } from 'react';
 
 export const useDrawMap = () => {
-  const [canvasWidth, setCanvasWidth] = useState<number>(1440);
-  const [canvasHeight, setCanvasHeight] = useState<number>(800);
+  const [canvasWidth] = useState<number>(1440);
+  const [canvasHeight] = useState<number>(800);
   const map = useRef(new Map(new Coordinate(0, 0), canvasWidth, canvasHeight));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -32,19 +33,7 @@ export const useDrawMap = () => {
 
       const layers = map.current.getLayers();
       for (let i = layers.length - 1; i >= 0; i--) {
-        if (layers[i]?.isVisible) {
-          const geoms = layers[i].geometries;
-          const geometriesByType = _.groupBy(geoms, (g) => g.constructor.name);
-
-          Object.entries(geometriesByType).forEach(([type, geometries]) => {
-            bufferCtx.save();
-            geometries.forEach((geom) => {
-              if (!(geom instanceof Point))
-                geom.draw(bufferCtx, map.current, canvas.width, canvas.height);
-            });
-            bufferCtx.restore();
-          });
-        }
+        layers[i].draw(bufferCtx, map.current, canvas.width, canvas.height);
       }
 
       isDirty.current = false;

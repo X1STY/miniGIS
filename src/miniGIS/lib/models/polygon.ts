@@ -20,7 +20,7 @@ export class Polygon implements MapObject {
         fillColor: '#ffc300',
         strokeColor:
           this.style?.strokeColor || this.layer?.style?.polygonStyle?.strokeColor || '#000000',
-        strokeWidth: 8,
+        strokeWidth: 2,
       });
     }
     return (this.style || this.layer?.style?.polygonStyle)!;

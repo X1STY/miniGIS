@@ -43,6 +43,7 @@ export class Line implements MapObject {
     return 0.0;
   }
 
+
   public length(): number {
     let length = 0;
     for (let i = 1; i < this.coordinates.length; i++) {

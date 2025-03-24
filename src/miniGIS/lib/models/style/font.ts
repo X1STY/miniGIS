@@ -1,6 +1,6 @@
 import { Style } from '@/miniGIS/lib/models/style/style';
 
-interface IFontStyle {
+export interface IFontStyle {
   size: string;
   fontFamily: string;
   char: number;

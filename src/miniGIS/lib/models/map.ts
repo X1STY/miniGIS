@@ -53,6 +53,10 @@ export class Map {
     this.notifyObservers({ type: 'changeLayers', data: this.layers });
   }
 
+  public changeScaleNotify() {
+    this.notifyObservers({ type: 'scale', data: this.scale });
+  }
+
   public removeLayer(layer: Layer) {
     const index = this.layers.findIndex((val) => val.id === layer.id);
     this.layers.splice(index, 1);
