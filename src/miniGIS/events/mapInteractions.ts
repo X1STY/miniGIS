@@ -1,6 +1,7 @@
 import { useNotificationsEvent } from '@/miniGIS/events/handleObservers';
-import { Coordinate, Polygon } from '@/miniGIS/lib';
+import { Coordinate, Point, Line, Polygon } from '@/miniGIS/lib';
 import { Map } from '@/miniGIS/lib/models/map';
+import { MapObject } from '@/miniGIS/lib/models/map_object';
 import { DragEndEvent } from '@dnd-kit/core';
 import _ from 'lodash';
 import { RefObject, useMemo, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ export const useMapInteractions = (
   canvasRef: RefObject<HTMLCanvasElement>
 ) => {
   const [_, setRerender] = useState(0);
-  const [selectedFeatures, setSelectedFeatures] = useState<Polygon[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<MapObject[]>([]);
   const { scale } = useNotificationsEvent(map, drawCanvas);
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<Coordinate | null>(null);
@@ -38,7 +39,7 @@ export const useMapInteractions = (
     const worldPoint = map.screenToWorld(new Coordinate(screenX, screenY));
 
     const layers = map.getLayers();
-    let foundObj: Polygon | null = null;
+    let foundObj: MapObject | null = null;
 
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
@@ -46,6 +47,14 @@ export const useMapInteractions = (
 
       for (let j = layer.geometries.length - 1; j >= 0; j--) {
         const obj = layer.geometries[j];
+        if (obj instanceof Point && obj.containsPoint(worldPoint, map)) {
+          foundObj = obj;
+          break;
+        }
+        if (obj instanceof Line && obj.containsPoint(worldPoint, map)) {
+          foundObj = obj;
+          break;
+        }
         if (obj instanceof Polygon && obj.containsPoint(worldPoint)) {
           foundObj = obj;
           break;
@@ -58,7 +67,7 @@ export const useMapInteractions = (
       const ctrlPressed = event.ctrlKey || event.metaKey;
       const shiftPressed = event.shiftKey;
 
-      let newSelected: Set<Polygon> = new Set(selectedFeatures);
+      let newSelected: Set<MapObject> = new Set(selectedFeatures);
 
       if (ctrlPressed && shiftPressed) {
         newSelected.add(foundObj);

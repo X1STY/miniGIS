@@ -1,6 +1,5 @@
-import { Coordinate, Point } from '@/miniGIS/lib';
+import { Coordinate } from '@/miniGIS/lib';
 import { Map } from '@/miniGIS/lib/models/map';
-import { mdiContentSaveSettings } from '@mdi/js';
 import _ from 'lodash';
 import { useEffect, useRef, useState } from 'react';
 

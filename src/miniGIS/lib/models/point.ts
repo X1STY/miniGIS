@@ -8,23 +8,46 @@ export class Point implements MapObject {
   public coordinate: Coordinate;
   layer?: Layer;
   style?: PointStyle;
+  private isSelected: boolean = false;
 
   constructor(x: number, y: number, style?: PointStyle) {
     this.coordinate = new Coordinate(x, y);
     this.layer = undefined;
     this.style = style;
   }
+
+  public setSelected(selected: boolean): void {
+    this.isSelected = selected;
+  }
+
   public getEffectiveStyle(): Style {
+    if (this.isSelected) {
+      const currentStyle = this.style || this.layer?.style?.pointStyle;
+      return new PointStyle({
+        color: '#ffc300',
+        size: (currentStyle?.size || 1) * 1.5,
+        symbolCode: currentStyle?.symbolCode,
+      });
+    }
     return (this.style || this.layer?.style?.pointStyle)!;
   }
+
   public draw(ctx: CanvasRenderingContext2D, map: Map): void {
     const screenCoord = map.worldToScreen(this.coordinate);
     const style = this.getEffectiveStyle() as PointStyle;
 
+    ctx.save();
+    ctx.font = `${style.size * 2}px Webdings`;
     ctx.fillStyle = style.color;
-    ctx.beginPath();
-    ctx.arc(screenCoord.x, screenCoord.y, style.size, 0, Math.PI * 2);
-    ctx.fill();
+
+    const text = String.fromCharCode(style.symbolCode);
+    const metrics = ctx.measureText(text);
+    const actualHeight = metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent;
+    const offsetX = metrics.width / 2;
+    const offsetY = actualHeight / 2;
+    console.log(screenCoord, metrics);
+    ctx.fillText(text, screenCoord.x - offsetX, screenCoord.y + offsetY);
+    ctx.restore();
   }
 
   public area(): number {
@@ -63,5 +86,11 @@ export class Point implements MapObject {
       coordinate: this.coordinate.toJSON(),
       layer: this.layer ? this.layer.name : null,
     };
+  }
+
+  public containsPoint(point: Coordinate, map?: Map): boolean {
+    const baseThreshold = (this.getEffectiveStyle() as PointStyle).size || 1;
+    const scaledThreshold = map ? baseThreshold / map.scale : baseThreshold;
+    return this.coordinate.distanceTo(point) <= scaledThreshold;
   }
 }

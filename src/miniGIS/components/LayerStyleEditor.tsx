@@ -16,7 +16,8 @@ export const LayerStyleEditor = ({ layer, onStyleChange }: LayerStyleEditorProps
   
   const [pointStyle, setPointStyle] = useState({
     color: layer.style?.pointStyle?.color || '#FEFEFE',
-    size: layer.style?.pointStyle?.size || 1
+    size: layer.style?.pointStyle?.size || 1,
+    symbolCode: layer.style?.pointStyle?.symbolCode || 0x6E
   });
 
   const [lineStyle, setLineStyle] = useState({
@@ -41,7 +42,8 @@ export const LayerStyleEditor = ({ layer, onStyleChange }: LayerStyleEditorProps
   useEffect(() => {
     setPointStyle({
       color: layer.style?.pointStyle?.color || '#FEFEFE',
-      size: layer.style?.pointStyle?.size || 1
+      size: layer.style?.pointStyle?.size || 1,
+      symbolCode: layer.style?.pointStyle?.symbolCode || 0x6E
     });
     setLineStyle({
       color: layer.style?.lineStyle?.color || '#000000',
@@ -66,7 +68,11 @@ export const LayerStyleEditor = ({ layer, onStyleChange }: LayerStyleEditorProps
     setPointStyle(newStyle);
     onStyleChange(new LayerStyle({
       ...layer.style,
-      pointStyle: new PointStyle(newStyle)
+      pointStyle: new PointStyle({
+        color: newStyle.color,
+        size: newStyle.size,
+        symbolCode: newStyle.symbolCode
+      })
     }));
   };
 
@@ -152,6 +158,35 @@ export const LayerStyleEditor = ({ layer, onStyleChange }: LayerStyleEditorProps
               max="20"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Символ</label>
+            <div className="h-[200px] overflow-y-auto mt-2 border rounded-md">
+              <div className="grid grid-cols-8 gap-1 p-2">
+                {Array.from({ length: 0xFF - 0x21 + 1 }, (_, i) => 0x21 + i).map((code) => (
+                  <button
+                    key={code}
+                    onClick={() => handlePointStyleChange({ symbolCode: code })}
+                    className={`p-1 rounded-md border aspect-square flex flex-col items-center justify-center ${
+                      pointStyle.symbolCode === code ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                    }`}
+                  >
+                    <div 
+                      className="text-xl leading-none"
+                      style={{ 
+                        color: pointStyle.color,
+                        fontFamily: 'Webdings'
+                      }}
+                    >
+                      {String.fromCharCode(code)}
+                    </div>
+                    <div className="text-[8px] text-gray-500 mt-1">
+                      {`0x${code.toString(16).toUpperCase()}`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -181,11 +216,15 @@ export const LayerStyleEditor = ({ layer, onStyleChange }: LayerStyleEditorProps
             <label className="block text-sm font-medium text-gray-700">Тип линии</label>
             <select
               value={lineStyle.type}
-              onChange={(e) => handleLineStyleChange({ type: e.target.value as 'solid' | 'dashed' })}
+              onChange={(e) => handleLineStyleChange({ type: e.target.value as 'solid' | 'dashed' | 'dotted' | 'dashdot' | 'longdash' | 'doubledash' })}
               className="mt-1 block w-full rounded-md border-gray-300"
             >
-              <option value="solid">Сплошная</option>
+              <option value="solid">Сплошная <div className='h-full w-[150px] border-solid border-t border-black mt-auto'/> </option>
               <option value="dashed">Пунктирная</option>
+              <option value="dotted">Точечная</option>
+              <option value="dashdot">Штрих-пунктирная</option>
+              <option value="longdash">Длинное тире</option>
+              <option value="doubledash">Двойное тире</option>
             </select>
           </div>
         </div>

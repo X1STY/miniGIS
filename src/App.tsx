@@ -1,4 +1,4 @@
-import { Layer } from "@/miniGIS/lib/models";
+import { Coordinate, Layer, Line } from "@/miniGIS/lib/models";
 import "./App.css";
 import { useEffect, useState } from "react";
 import { useDrawMap } from "@/miniGIS/events/drawMap";
@@ -71,6 +71,35 @@ function App() {
     setIsDragging(false);
   };
 
+  useEffect(()=> {
+    const lines1 = new Line([
+      new Coordinate(0, 0),
+      new Coordinate(5, 0)
+    ])
+    const lines2 = new Line([
+      new Coordinate(0, 0),
+      new Coordinate(-5, 0)
+    ])
+    const lines3 = new Line([
+      new Coordinate(0, 0),
+      new Coordinate(0, 35)
+    ])
+    const lines4 = new Line([
+      new Coordinate(0, 0),
+      new Coordinate(0, -5)
+    ])
+    const layer = new Layer("sadsa");
+    layer.addGeometry(lines1);
+    layer.addGeometry(lines2);
+
+    layer.addGeometry(lines3);
+
+    layer.addGeometry(lines4);
+
+    map.current.addLayer(layer);
+
+  }, [])
+
   useEffect(() => {
     if (editingLayer) {
       // При открытии окна центрируем его
@@ -80,23 +109,7 @@ function App() {
       });
     }
   }, [editingLayer]);
-
-  // useEffect(() => {
-  //   const layer = parseGeoJSON(TestJSON, "tomsk");
-  //   layer.style = {
-  //     lineStyle: { color: '#023047', type: 'solid', width: 2 },
-  //     polygonStyle: { fillColor: '#2a9d8f', strokeColor: '#000', strokeWidth: 1 },
-  //   };
-  //   const layer2 = parseGeoJSON(Test2JSON, "world");
-  //   layer2.style = {
-  //     lineStyle: { color: 'black', type: 'solid', width: 8 },
-  //     polygonStyle: { fillColor: '#3D62C1', strokeColor: '#000', strokeWidth: 2 },
-  //     pointStyle: {color: 'white', size: 0}
-  //   };
-  //   map.current.addLayer(layer2);
-  //   map.current.addLayer(layer);
-  // }, []);
-
+  
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { delay: 100, tolerance: 100 }
@@ -127,7 +140,7 @@ function App() {
         layer.style = {
           lineStyle: { color: '#023047', type: 'solid', width: 2 },
           polygonStyle: { fillColor: randomColor, strokeColor: '#000', strokeWidth: 1 },
-          pointStyle: { color: 'black', size: 1 }
+          pointStyle: { color: 'black', size: 1, symbolCode: 0x6E }
         };
         map.current.addLayer(layer);
         drawCanvas();
@@ -137,6 +150,7 @@ function App() {
     }
   };
 
+ 
   const handleStyleChange = (layer: Layer, newStyle: LayerStyle) => {
     layer.style = newStyle;
     drawCanvas();

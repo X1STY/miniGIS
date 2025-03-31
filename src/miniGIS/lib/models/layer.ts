@@ -1,7 +1,6 @@
 import { Coordinate } from '@/miniGIS/lib/models/coordinate';
 import { Map } from '@/miniGIS/lib/models/map';
 import { MapObject } from '@/miniGIS/lib/models/map_object';
-import { Point } from '@/miniGIS/lib/models/point';
 import { LayerStyle } from '@/miniGIS/lib/models/style/layer';
 import _ from 'lodash';
 
@@ -118,7 +117,7 @@ export class Layer {
       Object.entries(geometriesByType).forEach(([_, geometries]) => {
         bufferCtx.save();
         geometries.forEach((geom) => {
-          if (!(geom instanceof Point)) geom.draw(bufferCtx, map, width, height);
+          geom.draw(bufferCtx, map, width, height);
         });
         bufferCtx.restore();
       });
